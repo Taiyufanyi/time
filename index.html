@@ -202,6 +202,8 @@ main.wrap{padding-block:18px 60px}
 .catrow .v{font-family:var(--f-num);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
 .catrow .p{font-family:var(--f-num);color:var(--faint);text-align:right;font-size:12px}
 .catrow.zero{opacity:.45}
+.facts.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:520px){.facts.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
 .facts div{background:var(--surface);padding:8px 10px}
 .facts .label{display:block}
@@ -462,6 +464,22 @@ details.imp .btns small{margin-right:auto;color:var(--faint);font-size:12px}
 .mleg i{width:9px;height:9px;border-radius:3px}
 .hrv.mcard{grid-column:1/-1}
 .hrv.mcard .mdist{margin-bottom:0}
+.strip.hasf span:not(.f):not(.now){top:26%;bottom:26%;opacity:.75}
+.strip span.f{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ink) 30%,transparent)}
+.catrow.focus{font-size:15px;padding:8px 10px;margin:0 -10px;border-radius:10px;background:color-mix(in srgb,var(--cc) 10%,var(--surface))}
+.catrow.focus .nm{font-weight:800;color:var(--cc)}
+.catrow.focus .nm i{width:12px;height:12px}
+.catrow.focus .track{height:16px;border-radius:8px}
+.catrow.focus .v{font-size:18px;font-weight:800;color:var(--cc)}
+.catrow.focus .p{color:var(--cc);font-weight:700}
+.entry.focus{background:color-mix(in srgb,var(--cc) 9%,var(--surface))}
+.entry.focus .bar{width:6px;margin-left:-1px}
+.entry.focus .tx b{font-weight:800;font-size:16px}
+.entry.focus .tx small{font-weight:700}
+.entry.focus .du{font-size:17px;font-weight:800;color:var(--cc)}
+.facts .ffocus{background:color-mix(in srgb,var(--cc) 12%,var(--surface))}
+.facts .ffocus .label{color:var(--cc);font-weight:700}
+.facts .ffocus b{color:var(--cc);font-size:21px;font-weight:800}
 </style>
 <style>body{margin:0}[hidden]{display:none!important}</style>
 </head>
@@ -601,7 +619,7 @@ details.imp .btns small{margin-right:auto;color:var(--faint);font-size:12px}
   <!-- GOAL -->
   <section class="view" id="v-goal" hidden>
     <div class="rbar">
-      <div class="seg" id="g-seg"><button type="button" data-p="W">周目标</button><button type="button" data-p="M">月目标</button><button type="button" data-p="Y">年目标</button></div>
+      <div class="seg" id="g-seg"><button type="button" data-p="D">日目标</button><button type="button" data-p="W">周目标</button><button type="button" data-p="M">月目标</button><button type="button" data-p="Y">年目标</button></div>
       <button class="iconbtn" id="g-prev" aria-label="上一期">‹</button><h1 id="g-title"></h1><button class="iconbtn" id="g-next" aria-label="下一期">›</button>
       <button class="ghost sp" id="g-now">本期</button>
     </div>
@@ -786,7 +804,7 @@ function saveCats(){clearTimeout(setT);setT=setTimeout(()=>{setT=null;if(mode!==
 function setStatus(){const s=$('#status');s.dataset.m=mode;s.querySelector('span').textContent=mode==='cloud'?'已同步到你的账号':mode==='local'?'只存在这个浏览器':'连接中…'}
 
 /* ===== RECORD ===== */
-function chips(el,sel,fn){el.innerHTML=vis().map(c=>`<button type="button" class="chip" style="--cc:${cv(c.k)}" data-k="${c.k}" aria-pressed="${c.k===sel}"><i></i>${c.n}</button>`).join('');
+function chips(el,sel,fn){const fk=focusK();el.innerHTML=vis().map(c=>`<button type="button" class="chip" style="--cc:${cv(c.k)}" data-k="${c.k}" aria-pressed="${c.k===sel}"><i></i>${c.n}</button>`).join('');
   el.onclick=e=>{const b=e.target.closest('.chip');if(b)fn(b.dataset.k)}}
 function validSel(k){return CAT[k]&&!CAT[k].hidden?k:(vis()[0]||UNC).k}
 function renderTimerChips(){tCat=validSel(tCat);chips($('#t-cats'),tCat,k=>{tCat=k;tManual=true;renderTimerChips()})}
@@ -798,6 +816,7 @@ function renderDate(){
   $('#d-today').hidden=cur!==today();
   $('#d-pick').value=cur;
 }
+function focusK(){const f=CATS.find(c=>c.focus&&!c.hidden);if(f)return f.k;if(CATS.some(c=>'focus' in c))return null;return CAT.research&&!CAT.research.hidden?'research':null}
 function renderTimer(){
   const r=$('#t-running');
   if(timer){r.hidden=false;r.style.setProperty('--cc',cv(timer.c));
@@ -879,7 +898,7 @@ function renderList(){
   es.forEach(e=>{
     const s=toM(e.s),d=durOf(e);sum+=d;
     if(prev!=null&&s-prev>=5) html+=`<li class="gap"><span class="tm">${hm(prev)}–${hm(s)}</span><span class="bar"></span><span>空白未记录</span><span class="du">${fd(s-prev)}</span><button type="button" data-gap="${hm(prev)}|${hm(s)}">补记</button></li>`;
-    html+=`<li class="entry${e.id===editingId?' editing':''}" style="--cc:${cv(e.c)}"><span class="tm">${e.s}–${e.e}</span><span class="bar"></span><span class="tx" data-edit="${e.id}" tabindex="0" role="button"><b>${esc(e.t)}</b><small>${catOf(e.c).n}</small></span><span class="du">${fd(d)}</span><button type="button" class="del${delArm===e.id?' confirm':''}" data-del="${e.id}">${delArm===e.id?'确认删除':'删除'}</button></li>`;
+    html+=`<li class="entry${e.id===editingId?' editing':''}${e.c===focusK()?' focus':''}" style="--cc:${cv(e.c)}"><span class="tm">${e.s}–${e.e}</span><span class="bar"></span><span class="tx" data-edit="${e.id}" tabindex="0" role="button"><b>${esc(e.t)}</b><small>${catOf(e.c).n}</small></span><span class="du">${fd(d)}</span><button type="button" class="del${delArm===e.id?' confirm':''}" data-del="${e.id}">${delArm===e.id?'确认删除':'删除'}</button></li>`;
     prev=prev==null?s+d:Math.max(prev,s+d);
   });
   ul.innerHTML=html;
@@ -904,22 +923,22 @@ function stats(d){
   const span=a==null?0:b-a;
   return{t,sum,span,a,b,gap:Math.max(0,span-sum),mood:o.mood||0,n:o.entries.length};
 }
-function stripHTML(d,showNow){
+function stripHTML(d,showNow){const fk=focusK();
   return day(d).entries.map(e=>{const s=toM(e.s),du=Math.min(durOf(e),1440-s);
-    return `<span style="--cc:${cv(e.c)};left:${s/14.4}%;width:${du/14.4}%" title="${e.s}–${e.e} ${esc(e.t)} · ${fd(durOf(e))}"></span>`}).join('')
+    return `<span class="${e.c===fk?'f':''}" style="--cc:${cv(e.c)};left:${s/14.4}%;width:${du/14.4}%" title="${e.s}–${e.e} ${esc(e.t)} · ${fd(durOf(e))}"></span>`}).join('')
     +(showNow&&d===today()?`<span class="now" style="left:${nowM()/14.4}%"></span>`:'');
 }
 const ticksHTML=()=>[0,3,6,9,12,15,18,21,24].map(h=>`<b style="left:${h/24*100}%">${h}</b>`).join('');
-function catRows(t,total,days){
+function catRows(t,total,days){const fk=focusK();
   const max=Math.max(1,...Object.values(t));
-  return allCats().map(c=>({...c,v:t[c.k]||0})).filter(c=>c.v||(!c.hidden&&c.k!=='_')).sort((a,b)=>b.v-a.v).map(c=>`<div class="catrow${c.v?'':' zero'}" style="--cc:${cv(c.k)}"><span class="nm"><i></i>${c.n}</span><span class="track"><span style="width:${c.v/max*100}%"></span></span><span class="v">${days>1?fh(c.v):fd(c.v)}</span><span class="p">${total?Math.round(c.v/total*100):0}%</span></div>`).join('');
+  return allCats().map(c=>({...c,v:t[c.k]||0})).filter(c=>c.v||(!c.hidden&&c.k!=='_')).sort((a,b)=>b.v-a.v).map(c=>`<div class="catrow${c.v?'':' zero'}${c.k===fk?' focus':''}" style="--cc:${cv(c.k)}"><span class="nm"><i></i>${c.n}</span><span class="track"><span style="width:${c.v/max*100}%"></span></span><span class="v">${days>1?fh(c.v):fd(c.v)}</span><span class="p">${total?Math.round(c.v/total*100):0}%</span></div>`).join('');
 }
 function renderDay(){
   const s=stats(cur);
   $('#s-ticks').innerHTML=ticksHTML();
-  $('#s-strip').innerHTML=stripHTML(cur,true);
+  $('#s-strip').innerHTML=stripHTML(cur,true);$('#s-strip').classList.toggle('hasf',!!focusK());
   $('#s-aux').textContent=s.n?`${hm(s.a)} – ${hm(s.b)}`:'';
-  $('#facts').innerHTML=`<div><span class="label">已记录</span><b>${fd(s.sum)}</b></div><div><span class="label">空白未记录</span><b class="${s.gap>=60?'warnv':''}">${fd(s.gap)}</b></div><div><span class="label">醒着的时段</span><b>${fd(s.span)}</b></div>`;
+  $('#facts').innerHTML=`<div><span class="label">已记录</span><b>${fd(s.sum)}</b></div><div><span class="label">空白未记录</span><b class="${s.gap>=60?'warnv':''}">${fd(s.gap)}</b></div><div><span class="label">醒着的时段</span><b>${fd(s.span)}</b></div>${(()=>{const fk=focusK();return fk?`<div class="ffocus" style="--cc:${cv(fk)}"><span class="label">${esc(CAT[fk].n)}</span><b>${fd(s.t[fk]||0)}</b></div>`:''})()}`;$('#facts').classList.toggle('four',!!focusK());
   $('#day-cats').innerHTML=catRows(s.t,s.sum,1);
 }
 
@@ -1027,7 +1046,7 @@ function renderReview(){
   const sp=$('#r-strips-panel');
   if(rPer==='Y'){sp.hidden=true}else{sp.hidden=false;
     $('#r-strips').innerHTML=`<div class="sticks"><span></span><div class="ticks">${ticksHTML()}</div><span></span></div><div class="strips">`+
-      per.map(p=>{const dd=pd(p.d);return `<button type="button" class="srow" data-go="D|${p.d}"><span class="d${p.d===td?' today':''}">${dd.getMonth()+1}/${dd.getDate()} 周${WK[dd.getDay()]}</span><div class="strip">${stripHTML(p.d,false)}</div><span class="t">${p.sum?fd(p.sum):'–'}</span></button>`}).join('')+`</div>`;}
+      per.map(p=>{const dd=pd(p.d);return `<button type="button" class="srow" data-go="D|${p.d}"><span class="d${p.d===td?' today':''}">${dd.getMonth()+1}/${dd.getDate()} 周${WK[dd.getDay()]}</span><div class="strip${focusK()?' hasf':''}">${stripHTML(p.d,false)}</div><span class="t">${p.sum?fd(p.sum):'–'}</span></button>`}).join('')+`</div>`;}
 
   // mood
   let pts;
@@ -1108,7 +1127,7 @@ function renderCatModal(){
     <div class="ord"><button type="button" data-act="up" aria-label="上移" ${i?'':'disabled'}>↑</button><button type="button" data-act="down" aria-label="下移" ${i<CATS.length-1?'':'disabled'}>↓</button></div>
     ${palOpen===c.k?`<div class="pal">${Array.from({length:NPAL},(_,j)=>`<button type="button" style="--cc:var(--p${j})" data-act="pick" data-p="${j}" aria-pressed="${j===c.p}" aria-label="颜色${j+1}"></button>`).join('')}</div>`:''}
     <input class="field kw" id="cm-kw-${c.k}" data-f="kw" value="${esc(c.kw||'')}" placeholder="关键词，用空格隔开，例如 论文 文献">
-    <div class="acts"><label><input type="checkbox" data-f="star" ${c.star?'checked':''}>重点</label>
+    <div class="acts"><label><input type="checkbox" data-f="star" ${c.star?'checked':''}>重点</label><label><input type="checkbox" data-f="focus" ${c.k===focusK()?'checked':''}>主攻（时间条突出显示）</label>
       <button type="button" data-act="hide">${c.hidden?'恢复显示':'隐藏'}</button>
       <button type="button" data-act="del" class="${cDelArm===c.k?'delc':''}">${cDelArm===c.k?'确认删除':'删除'}</button>
       <span class="use">${u[c.k]?`已用 ${u[c.k]} 条`:'还没用过'}</span></div>
@@ -1123,6 +1142,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('#txtmo
 function catChanged(){setCats(CATS);saveCats();renderTimerChips();renderFormChips();renderAll()}
 $('#cm-list').addEventListener('input',e=>{const r=e.target.closest('.cmrow'),f=e.target.dataset.f;if(!r||!f)return;const c=CAT[r.dataset.k];
   if(f==='star'){c.star=e.target.checked?1:0;catChanged();return}
+  if(f==='focus'){const v=e.target.checked;CATS.forEach(x=>x.focus=0);if(v)c.focus=1;catChanged();renderCatModal();return}
   if(f==='n'){const v=e.target.value.trim();if(!v)return;c.n=v}else c.kw=e.target.value;
   catChanged()});
 $('#cm-list').addEventListener('change',e=>{if(e.target.dataset.f==='n'&&!e.target.value.trim()){const c=CAT[e.target.closest('.cmrow').dataset.k];e.target.value=c.n;flash('名称不能为空')}});
@@ -1278,9 +1298,9 @@ function ensureHabits(){if(!habits||!Array.isArray(habits.list))habits={list:[],
 ensureHabits();
 const hv=(d,id)=>(habits.log[d]||{})[id]||0;
 function setHv(d,id,v){const o=habits.log[d]||(habits.log[d]={});if(v)o[id]=v;else delete o[id];if(!Object.keys(o).length)delete habits.log[d];saveBlob('habits');renderHabit(true)}
-function rangeOf(per,anchor){const a=pd(anchor);let s,e;if(per==='W'){s=pd(weekKey(anchor));e=new Date(s);e.setDate(s.getDate()+6)}else if(per==='M'){s=new Date(a.getFullYear(),a.getMonth(),1);e=new Date(a.getFullYear(),a.getMonth()+1,0)}else{s=new Date(a.getFullYear(),0,1);e=new Date(a.getFullYear(),11,31)}const out=[];for(const d=new Date(s);d<=e;d.setDate(d.getDate()+1))out.push(ymd(d));return out}
-function perTitle(per,anchor){const ds=rangeOf(per,anchor),a=pd(anchor);if(per==='W'){const s=pd(ds[0]),e=pd(ds[6]);return `${s.getMonth()+1}月${s.getDate()}日 – ${e.getMonth()+1}月${e.getDate()}日`}return per==='M'?`${a.getFullYear()}年${a.getMonth()+1}月`:`${a.getFullYear()}年`}
-function shiftAnchor(per,anchor,n){const a=pd(anchor);if(per==='W')a.setDate(a.getDate()+7*n);else if(per==='M'){a.setDate(1);a.setMonth(a.getMonth()+n)}else a.setFullYear(a.getFullYear()+n);return ymd(a)}
+function rangeOf(per,anchor){if(per==='D')return [anchor];const a=pd(anchor);let s,e;if(per==='W'){s=pd(weekKey(anchor));e=new Date(s);e.setDate(s.getDate()+6)}else if(per==='M'){s=new Date(a.getFullYear(),a.getMonth(),1);e=new Date(a.getFullYear(),a.getMonth()+1,0)}else{s=new Date(a.getFullYear(),0,1);e=new Date(a.getFullYear(),11,31)}const out=[];for(const d=new Date(s);d<=e;d.setDate(d.getDate()+1))out.push(ymd(d));return out}
+function perTitle(per,anchor){const ds=rangeOf(per,anchor),a=pd(anchor);if(per==='D')return `${a.getMonth()+1}月${a.getDate()}日 周${WK[a.getDay()]}`;if(per==='W'){const s=pd(ds[0]),e=pd(ds[6]);return `${s.getMonth()+1}月${s.getDate()}日 – ${e.getMonth()+1}月${e.getDate()}日`}return per==='M'?`${a.getFullYear()}年${a.getMonth()+1}月`:`${a.getFullYear()}年`}
+function shiftAnchor(per,anchor,n){const a=pd(anchor);if(per==='D')a.setDate(a.getDate()+n);else if(per==='W')a.setDate(a.getDate()+7*n);else if(per==='M'){a.setDate(1);a.setMonth(a.getMonth()+n)}else a.setFullYear(a.getFullYear()+n);return ymd(a)}
 function streak(id){let d=today(),n=0;if(hv(d,id)!==1)d=addD(d,-1);while(hv(d,id)===1&&n<3650){n++;d=addD(d,-1)}return n}
 function renderHabit(force){
   if($('#v-habit').hidden)return;
@@ -1334,7 +1354,7 @@ $('#hr-prev').onclick=()=>{hbAnchor=shiftAnchor(hbPer,hbAnchor,-1);renderHabitRe
 /* ===== 赚钱目标 ===== */
 const DEF_SRC=['上课','翻译','直播字典','兼职','其他'];
 const ICONS=['💰','🎯','📚','🎓','🎤','🌏','✍️','💼','🏠','✈️','❤️','⭐'];
-const PER_N={W:'周',M:'月',Y:'年'};
+const PER_N={D:'日',W:'周',M:'月',Y:'年'};
 let money={},gPer='M',gAnchor=today(),gEdit=null,gDelArm=null,incSrc=null,srcEdit=false,incDelArm=null;
 function ensureMoney(){if(!money||typeof money!=='object')money={};if(!Array.isArray(money.goals))money.goals=[];if(!Array.isArray(money.inc))money.inc=[];if(!Array.isArray(money.srcs)||!money.srcs.length)money.srcs=DEF_SRC.map((n,i)=>({k:'s'+i,n}))}
 ensureMoney();
@@ -1344,7 +1364,7 @@ const srcCol=k=>`var(--p${Math.max(0,money.srcs.findIndex(s=>s.k===k))%NPAL})`;
 function goalProg(g,ds){const s=ds[0],e=ds[ds.length-1];return money.inc.filter(i=>i.d>=s&&i.d<=e&&(!g.src||!g.src.length||g.src.includes(i.src))).reduce((a,i)=>a+(+i.amt||0),0)}
 function goalForm(g){const v=g||{icon:'💰',n:'',target:'',src:[]},id=g?g.id:'new';
   return `<form class="gform" data-gform="${id}"><div class="label">选个图标</div><div class="icons">${ICONS.map(c=>`<button type="button" data-icon="${c}" aria-pressed="${c===(v.icon||'💰')}">${c}</button>`).join('')}</div>
-<div class="drow"><label>目标名称<input class="field" name="n" id="gf-n-${id}" value="${esc(v.n||'')}" placeholder="例如 每${PER_N[gPer]}赚钱目标" maxlength="20"></label><label>目标金额（元）<input class="field" name="target" id="gf-t-${id}" type="number" min="1" step="any" inputmode="decimal" value="${v.target||''}" placeholder="例如 ${gPer==='W'?'1000':gPer==='M'?'5000':'50000'}"></label></div>
+<div class="drow"><label>目标名称<input class="field" name="n" id="gf-n-${id}" value="${esc(v.n||'')}" placeholder="例如 每${PER_N[gPer]}赚钱目标" maxlength="20"></label><label>目标金额（元）<input class="field" name="target" id="gf-t-${id}" type="number" min="1" step="any" inputmode="decimal" value="${v.target||''}" placeholder="例如 ${gPer==='D'?'200':gPer==='W'?'1000':gPer==='M'?'5000':'50000'}"></label></div>
 <div class="label">计入哪些来源（不选就是全部来源）</div><div class="chips">${money.srcs.map(s=>`<button type="button" class="chip" style="--cc:${srcCol(s.k)}" data-gsrc="${s.k}" aria-pressed="${(v.src||[]).includes(s.k)}"><i></i>${esc(s.n)}</button>`).join('')}</div>
 <div class="dacts">${g?`<button type="button" class="ghost danger${gDelArm===g.id?' armed':''}" data-ga="del">${gDelArm===g.id?'确认删除':'删除目标'}</button>`:''}<button type="button" class="ghost" data-ga="cancel">取消</button><button type="submit" class="primary">保存</button></div></form>`}
 function renderGoal(force){
@@ -1353,14 +1373,14 @@ function renderGoal(force){
   $('#g-title').textContent=perTitle(gPer,gAnchor);
   const ds=rangeOf(gPer,gAnchor),td=today(),s=ds[0],e=ds[ds.length-1];
   const inP=money.inc.filter(i=>i.d>=s&&i.d<=e),total=inP.reduce((a,i)=>a+(+i.amt||0),0);
-  $('#g-total').textContent=`本${PER_N[gPer]}进项 ${yuan(total)}`;
+  $('#g-total').textContent=`${gPer==='D'?'当天':'本'+PER_N[gPer]}进项 ${yuan(total)}`;
   const fe=document.activeElement,keepG=!force&&fe&&$('#g-list').contains(fe)&&fe.matches('input');
   if(!keepG){const gs=money.goals.filter(g=>g.scope===gPer);
     const daysLeft=td>=s&&td<=e?ds.filter(d=>d>=td).length:td<s?ds.length:0;
     $('#g-list').innerHTML=gs.map(g=>{if(gEdit===g.id)return goalForm(g);
       const got=goalProg(g,ds),pct=g.target?Math.round(got/g.target*100):0,rem=Math.max(0,g.target-got),ok=g.target>0&&got>=g.target;
       const srcTxt=g.src&&g.src.length?g.src.map(k=>srcOf(k)?.n).filter(Boolean).join('、'):'全部来源';
-      const tip=ok?`已经达成，超出 ${yuan(got-g.target)}`:daysLeft?`还差 ${yuan(rem)}，还剩 ${daysLeft} 天，平均每天要赚 ${yuan(rem/daysLeft)}`:`这一期已结束，差 ${yuan(rem)} 没达成`;
+      const tip=ok?`已经达成，超出 ${yuan(got-g.target)}`:daysLeft?(g.scope==='D'?`${s===td?'今天':''}还差 ${yuan(rem)}`:`还差 ${yuan(rem)}，还剩 ${daysLeft} 天，平均每天要赚 ${yuan(rem/daysLeft)}`):`这一期已结束，差 ${yuan(rem)} 没达成`;
       return `<div class="goal${ok?' ok':''}" data-gid="${g.id}"><div class="gi" aria-hidden="true">${g.icon||'💰'}</div><div class="gb"><div class="gt"><b>${esc(g.n||'赚钱目标')}</b><span>每${PER_N[g.scope]}</span></div><div class="gbar"><span style="width:${Math.min(100,pct)}%"></span></div><div class="gm"><b class="num">${yuan(got)}</b><span class="num"> / ${yuan(g.target)} · ${pct}%</span></div><small>${tip}<br>计入：${esc(srcTxt)}</small></div><button type="button" class="ghost sm" data-ga="edit">编辑</button></div>`}).join('')
       +(gEdit==='new'?goalForm(null):`<button type="button" class="ghost addgoal" data-ga="new">+ 新建每${PER_N[gPer]}目标</button>`)}
   if(!srcOf(incSrc))incSrc=money.srcs[0]&&money.srcs[0].k;
