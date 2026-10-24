@@ -480,6 +480,8 @@ details.imp .btns small{margin-right:auto;color:var(--faint);font-size:12px}
 .facts .ffocus{background:color-mix(in srgb,var(--cc) 12%,var(--surface))}
 .facts .ffocus .label{color:var(--cc);font-weight:700}
 .facts .ffocus b{color:var(--cc);font-size:21px;font-weight:800}
+.inclist li.iedit{display:block;padding:10px 0}
+.inclist li.iedit .incf{padding:12px;background:var(--sunk);border-radius:10px}
 </style>
 <style>body{margin:0}[hidden]{display:none!important}</style>
 </head>
@@ -1355,7 +1357,7 @@ $('#hr-prev').onclick=()=>{hbAnchor=shiftAnchor(hbPer,hbAnchor,-1);renderHabitRe
 const DEF_SRC=['上课','翻译','直播字典','兼职','其他'];
 const ICONS=['💰','🎯','📚','🎓','🎤','🌏','✍️','💼','🏠','✈️','❤️','⭐'];
 const PER_N={D:'日',W:'周',M:'月',Y:'年'};
-let money={},gPer='M',gAnchor=today(),gEdit=null,gDelArm=null,incSrc=null,srcEdit=false,incDelArm=null;
+let money={},gPer='M',gAnchor=today(),gEdit=null,gDelArm=null,incSrc=null,srcEdit=false,incDelArm=null,incEdit=null,incEditSrc=null;
 function ensureMoney(){if(!money||typeof money!=='object')money={};if(!Array.isArray(money.goals))money.goals=[];if(!Array.isArray(money.inc))money.inc=[];if(!Array.isArray(money.srcs)||!money.srcs.length)money.srcs=DEF_SRC.map((n,i)=>({k:'s'+i,n}))}
 ensureMoney();
 const yuan=v=>'¥'+(Math.round(v*100)/100).toLocaleString('zh-CN',{maximumFractionDigits:2});
@@ -1393,7 +1395,15 @@ function renderGoal(force){
   const bl=money.srcs.filter(x=>by[x.k]).concat(Object.keys(by).filter(k=>!srcOf(k)).map(k=>({k,n:'已删除的来源'}))).sort((a,b)=>by[b.k]-by[a.k]);
   $('#inc-by').innerHTML=bl.length?bl.map(x=>`<div class="catrow" style="--cc:${srcCol(x.k)}"><span class="nm"><i></i>${esc(x.n)}</span><span class="track"><span style="width:${by[x.k]/max*100}%"></span></span><span class="v">${yuan(by[x.k])}</span><span class="p">${total?Math.round(by[x.k]/total*100):0}%</span></div>`).join(''):'<p class="muted">这段时间还没有进项。</p>';
   const list=inP.slice().sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:(b.cr||0)-(a.cr||0));
-  $('#inc-list').innerHTML=list.length?list.map(i=>{const x=pd(i.d);return `<li data-iid="${i.id}"><span class="d num">${x.getMonth()+1}/${x.getDate()}</span><span class="sc" style="--cc:${srcCol(i.src)}">${esc(srcOf(i.src)?.n||'已删除')}</span><span class="nt">${esc(i.note||'')}</span><b class="num">${yuan(+i.amt)}</b><button type="button" class="ghost sm${incDelArm===i.id?' armed danger':''}" data-ia="del">${incDelArm===i.id?'确认':'删除'}</button></li>`}).join(''):'<li class="tempty">这段时间还没有记录</li>';
+  const fe3=document.activeElement;
+  if(force||!(fe3&&$('#inc-list').contains(fe3)&&fe3.matches('input'))){
+  $('#inc-list').innerHTML=list.length?list.map(i=>{const x=pd(i.d);
+    if(incEdit===i.id){const cs=incEditSrc||i.src;return `<li class="iedit" data-iid="${i.id}"><form class="incf" data-ief="${i.id}">
+<div class="drow"><label>金额（元）<input class="field" name="amt" id="ie-a-${i.id}" type="number" step="any" min="0" inputmode="decimal" value="${+i.amt}"></label><label>日期<input class="field" name="d" id="ie-d-${i.id}" type="date" value="${i.d}"></label></div>
+<div class="label">来源</div><div class="chips">${money.srcs.map(x=>`<button type="button" class="chip" style="--cc:${srcCol(x.k)}" data-iesrc="${x.k}" aria-pressed="${x.k===cs}"><i></i>${esc(x.n)}</button>`).join('')}</div>
+<input class="field" name="note" id="ie-n-${i.id}" value="${esc(i.note||'')}" placeholder="备注" maxlength="40">
+<div class="dacts"><button type="button" class="ghost danger${incDelArm===i.id?' armed':''}" data-ia="del">${incDelArm===i.id?'确认删除':'删除'}</button><button type="button" class="ghost" data-ia="cancel">取消</button><button type="submit" class="primary">保存修改</button></div></form></li>`}
+    return `<li data-iid="${i.id}"><span class="d num">${x.getMonth()+1}/${x.getDate()}</span><span class="sc" style="--cc:${srcCol(i.src)}">${esc(srcOf(i.src)?.n||'已删除')}</span><span class="nt">${esc(i.note||'')}</span><b class="num">${yuan(+i.amt)}</b><button type="button" class="ghost sm" data-ia="edit">修改</button></li>`}).join(''):'<li class="tempty">这段时间还没有记录</li>';}
 }
 $('#g-list').addEventListener('click',e=>{
   const ic=e.target.closest('[data-icon]');if(ic){ic.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===ic));return}
@@ -1419,9 +1429,17 @@ $('#src-edit').addEventListener('click',e=>{const b=e.target.closest('[data-sa]'
   if(n){flash(`这个来源已有 ${n} 笔记录，不能删除，可以改名`);return}if(money.srcs.length<=1){flash('至少要留一个来源');return}
   money.srcs=money.srcs.filter(x=>x.k!==k);money.goals.forEach(g=>{if(g.src)g.src=g.src.filter(x=>x!==k)});saveBlob('money');renderGoal(true)});
 $('#src-edit').addEventListener('submit',e=>{e.preventDefault();const v=$('#src-new').value.trim();if(!v)return;money.srcs.push({k:'s'+uid(),n:v});saveBlob('money');renderGoal(true);const n=$('#src-new');if(n)n.focus()});
-$('#inc-list').addEventListener('click',e=>{const b=e.target.closest('[data-ia]');if(!b)return;const id=b.closest('[data-iid]').dataset.iid;
+$('#inc-list').addEventListener('click',e=>{
+  const sb=e.target.closest('[data-iesrc]');if(sb){incEditSrc=sb.dataset.iesrc;sb.parentElement.querySelectorAll('[data-iesrc]').forEach(x=>x.setAttribute('aria-pressed',x===sb));return}
+  const b=e.target.closest('[data-ia]');if(!b)return;const id=b.closest('[data-iid]').dataset.iid,a=b.dataset.ia;
+  if(a==='edit'){incEdit=id;incEditSrc=null;incDelArm=null;renderGoal(true);const f=document.getElementById('ie-a-'+id);if(f)f.focus();return}
+  if(a==='cancel'){incEdit=null;incDelArm=null;renderGoal(true);return}
   if(incDelArm!==id){incDelArm=id;renderGoal(true);setTimeout(()=>{if(incDelArm===id){incDelArm=null;renderGoal(true)}},3000);return}
-  money.inc=money.inc.filter(i=>i.id!==id);incDelArm=null;saveBlob('money');renderGoal(true);flash('已删除')});
+  money.inc=money.inc.filter(i=>i.id!==id);incDelArm=null;incEdit=null;saveBlob('money');renderGoal(true);flash('已删除')});
+$('#inc-list').addEventListener('submit',e=>{const f=e.target.closest('[data-ief]');if(!f)return;e.preventDefault();const i=money.inc.find(x=>x.id===f.dataset.ief);if(!i)return;
+  const amt=+f.querySelector('[name=amt]').value;if(!(amt>0)){flash('请填金额');return}
+  i.amt=Math.round(amt*100)/100;i.d=f.querySelector('[name=d]').value||i.d;i.note=f.querySelector('[name=note]').value.trim();if(incEditSrc)i.src=incEditSrc;
+  incEdit=null;incEditSrc=null;saveBlob('money');const ds=rangeOf(gPer,gAnchor);if(i.d<ds[0]||i.d>ds[ds.length-1])gAnchor=i.d;renderGoal(true);flash('已保存修改')});
 $('#g-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(b){gPer=b.dataset.p;gEdit=null;renderGoal(true)}});
 $('#g-prev').onclick=()=>{gAnchor=shiftAnchor(gPer,gAnchor,-1);gEdit=null;renderGoal(true)};$('#g-next').onclick=()=>{gAnchor=shiftAnchor(gPer,gAnchor,1);gEdit=null;renderGoal(true)};$('#g-now').onclick=()=>{gAnchor=today();renderGoal(true)};
 
